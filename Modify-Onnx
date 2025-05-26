@@ -1,0 +1,367 @@
+#This converts a Yolo11n model that has been converteed to ONNX to to match the RKNN Model
+#This is based off the AIOROCKCHIP RKNN_MODEL_ZOO repoisitory's modified ONNX file
+
+import onnx
+from onnx import helper, TensorProto
+
+# List of node names to remove, including the extra ones
+nodes_to_remove = [
+    "/model.23/Concat_3", "/model.23/Split", "/model.23/Sigmoid", "/model.23/Concat_5",
+    "/model.23/dfl/Reshape", "/model.23/dfl/Transpose", "/model.23/dfl/Softmax",
+    "/model.23/dfl/conv/Conv", "/model.23/dfl/Reshape_1", "/model.23/Slice", "/model.23/Slice_1",
+    "/model.23/Sub", "/model.23/Add_1", "/model.23/Sub_1", "/model.23/Add_2", "/model.23/Div_1",
+    "/model.23/Concat_4", "/model.23/Mul_2", "/model.23/Concat",
+
+    # Extra nodes without the leading slash
+    "/model.23/Concat_1", "/model.23/Concat_2", "/model.23/Reshape",
+    "/model.23/Reshape_1", "/model.23/Reshape_2",
+    "model.23/dfl/Constant", "model.23/dfl/Transpose_1", "model.23/dfl/Constant_1", 
+    "model.23/Shape", "model.23/Gather", "model.23/Add", "model.23/Constant_6", 
+    "model.23/Div", "model.23/Constant_7", "model.23/Mul", "model.23/Constant_8", 
+    "model.23/Mul_1", "model.23/Constant_9", "model.23/Constant_10", "model.23/Constant_11", 
+    "model.23/Constant_12", "model.23/Constant_output_0", "model.23/Constant_1_output_0", 
+    "model.23/Constant_4_output_0", "model.23/Constant_5_output_0", "model.23/Constant_2_output_0", 
+    "model.23/Constant_3_output_0", "/model.23/Constant_5", "/model.23/Constant_6", "/model.23/Constant_7",
+    '/model.23/Constant', '/model.23/Constant_1', '/model.23/Constant_2', '/model.23/dfl/Constant', 
+    '/model.23/dfl/Transpose_1', '/model.23/dfl/Constant_1', '/model.23/Constant_4', '/model.23/Constant_9', 
+    '/model.23/Constant_10', '/model.23/Constant_11', '/model.23/Constant_12', '/model.23/Shape', 
+    '/model.23/Gather', '/model.23/Add', '/model.23/Div', '/model.23/Mul', "/model.23/Constant_3" , "/model.23/Constant_8",
+    '/model.23/Mul_1', '/model.23/Constant_3_output_0', '/model.23/Constant_7_output_0', '/model.23/Constant_8_output_0', 
+    '/model.23/Constant_6_output_0', '/model.23/Constant_5_output_0', '/model.23/Constant_3_output_0' 
+
+]
+# Paths
+model_path = "best.onnx"
+modified_model_path = "modified.onnx"
+
+# Load the ONNX model once
+model = onnx.load(model_path)
+graph = model.graph
+
+print("Original number of nodes:", len(graph.node))
+
+# Filter out the nodes we want to remove
+new_nodes = []
+for node in graph.node:
+    if node.name in nodes_to_remove:
+        print(f"Removing node: {node.name} ({node.op_type})")
+    else:
+        new_nodes.append(node)
+
+# Update the graph with the filtered list of nodes
+graph.ClearField("node")
+graph.node.extend(new_nodes)
+
+# Optionally, remove any graph outputs that reference the removed nodes.
+# If you plan to set new outputs, you might want to clear them once:
+graph.ClearField("output")
+
+new_outputs = []
+for output in graph.output:
+    if output.name in nodes_to_remove:
+        print(f"Removing graph output: {output.name}")
+    else:
+        new_outputs.append(output)
+
+# Attach the cleaned outputs back (if any exist)
+graph.output.extend(new_outputs)
+
+print("New number of nodes:", len(graph.node))
+
+# DEBUG: Print existing nodes after filtering
+print("=== NODE LIST AFTER CLEANUP ===")
+for node in graph.node:
+    print("Node:", node.name)
+
+########## Section 1 ##########
+from onnx import helper, TensorProto
+
+# STEP 1: Create the Sigmoid node.
+# It takes the output from the Conv node and produces an intermediate tensor "onnx::ReduceSum_476".
+sigmoid_node_1 = helper.make_node(
+    "Sigmoid",
+    inputs=["/model.23/cv3.0/cv3.0.2/Conv_output_0"],
+    outputs=["onnx::ReduceSum_476"],
+    name="/model.23/Sigmoid"
+)
+
+# STEP 2: Create the ReduceSum node.
+# It consumes "onnx::ReduceSum_476" and outputs "/model.23/ReduceSum_output_0".
+reduce_sum_node_1 = helper.make_node(
+    "ReduceSum",
+    inputs=["onnx::ReduceSum_476"],
+    outputs=["/model.23/ReduceSum_output_0"],
+    name="/model.23/ReduceSum",
+    axes=[1],
+    keepdims=1
+)
+
+# STEP 3: Create the Constant nodes for the Clip node.
+min_const_1 = helper.make_node(
+    "Constant",
+    inputs=[],
+    outputs=["/model.23/Constant_output_0"],
+    name="/model.23/Constant_output_0",
+    value=helper.make_tensor(
+        name="min_value",
+        data_type=TensorProto.FLOAT,
+        dims=[],  # scalar
+        vals=[0]
+    )
+)
+max_const_1 = helper.make_node(
+    "Constant",
+    inputs=[],
+    outputs=["/model.23/Constant_1_output_0"],
+    name="/model.23/Constant_1_output_0",
+    value=helper.make_tensor(
+        name="max_value",
+        data_type=TensorProto.FLOAT,
+        dims=[],  # scalar
+        vals=[1]
+    )
+)
+
+# STEP 4: Create the Clip node.
+clip_node_1 = helper.make_node(
+    "Clip",
+    inputs=[
+        "/model.23/ReduceSum_output_0",     # Data from ReduceSum
+        "/model.23/Constant_output_0",       # Min constant (0)
+        "/model.23/Constant_1_output_0"        # Max constant (1)
+    ],
+    outputs=["480"],  # Final output for Section 1
+    name="/model.23/Clip"
+)
+
+# Append the new nodes for Section 1 into the graph
+graph.node.extend([sigmoid_node_1, reduce_sum_node_1, min_const_1, max_const_1, clip_node_1])
+
+# STEP 5: Define graph outputs for Section 1.
+# Fix: Update the intermediate output tensor shape from [1,80,80,80] to [1,1,80,80] to reflect 1 class.
+output_tensor_intermediate_1 = helper.make_tensor_value_info("onnx::ReduceSum_476", TensorProto.FLOAT, [1, 1, 80, 80])
+output_tensor_final_1 = helper.make_tensor_value_info("480", TensorProto.FLOAT, [1, 1, 80, 80])
+graph.output.extend([output_tensor_intermediate_1, output_tensor_final_1])
+
+
+########## Section 2 ##########
+# STEP 1: Create the Sigmoid node.
+sigmoid_node_2 = helper.make_node(
+    "Sigmoid",
+    inputs=["/model.23/cv3.2/cv3.2.2/Conv_output_0"],
+
+    outputs=["onnx::ReduceSum_526"],
+    name="/model.23/Sigmoid_2"
+)
+
+# STEP 2: Create the ReduceSum node.
+reduce_sum_node_2 = helper.make_node(
+    "ReduceSum",
+    inputs=["onnx::ReduceSum_526"],
+    outputs=["/model.23/ReduceSum_2_output_0"],
+    name="/model.23/ReduceSum_2",
+    axes=[1],
+    keepdims=1
+)
+
+# STEP 3: Create the Constant nodes for the Clip node.
+min_const_2 = helper.make_node(
+    "Constant",
+    inputs=[],
+    outputs=["/model.23/Constant_4_output_0"],
+    name="/model.23/Constant_4_output_0",
+    value=helper.make_tensor(
+        name="min_value",
+        data_type=TensorProto.FLOAT,
+        dims=[],
+        vals=[0]
+    )
+)
+max_const_2 = helper.make_node(
+    "Constant",
+    inputs=[],
+    outputs=["/model.23/Constant_5_output_0"],
+    name="/model.23/Constant_5_output_0",
+    value=helper.make_tensor(
+        name="max_value",
+        data_type=TensorProto.FLOAT,
+        dims=[],
+        vals=[1]
+    )
+)
+
+# STEP 4: Create the Clip node.
+clip_node_2 = helper.make_node(
+    "Clip",
+    inputs=[
+        "/model.23/ReduceSum_2_output_0",     # Data from ReduceSum
+        "/model.23/Constant_4_output_0",        # Min constant (0)
+
+        "/model.23/Constant_5_output_0"         # Max constant (1)
+    ],
+    outputs=["530"],  # Final output for Section 2
+    name="/model.23/Clip_2"
+)
+
+# Append the new nodes for Section 2 into the graph
+graph.node.extend([sigmoid_node_2, reduce_sum_node_2, min_const_2, max_const_2, clip_node_2])
+
+# STEP 5: Define graph outputs for Section 2.
+output_tensor_intermediate_2 = helper.make_tensor_value_info("onnx::ReduceSum_526", TensorProto.FLOAT, [1, 1, 20, 20])
+output_tensor_final_2 = helper.make_tensor_value_info("530", TensorProto.FLOAT, [1, 1, 20, 20])
+graph.output.extend([output_tensor_intermediate_2, output_tensor_final_2])
+
+########## Section 3 ##########
+# STEP 1: Create the Sigmoid node.
+sigmoid_node_3 = helper.make_node(
+    "Sigmoid",
+    inputs=["/model.23/cv3.1/cv3.1.2/Conv_output_0"],
+    outputs=["onnx::ReduceSum_501"],
+    name="/model.23/Sigmoid_1"
+)
+
+# STEP 2: Create the ReduceSum node.
+reduce_sum_node_3 = helper.make_node(
+    "ReduceSum",
+    inputs=["onnx::ReduceSum_501"],
+    outputs=["/model.23/ReduceSum_1_output_0"],
+    name="/model.23/ReduceSum_1",
+    axes=[1],
+    keepdims=1
+)
+
+# STEP 3: Create the Constant nodes for the Clip node.
+min_const_3 = helper.make_node(
+    "Constant",
+    inputs=[],
+    outputs=["/model.23/Constant_2_output_0"],
+    name="/model.23/Constant_2_output_0",
+    value=helper.make_tensor(
+        name="min_value",
+        data_type=TensorProto.FLOAT,
+        dims=[],
+        vals=[0]
+    )
+)
+
+max_const_3 = helper.make_node(
+    "Constant",
+    inputs=[],
+    outputs=["/model.23/Constant_3_output_0"],
+    name="/model.23/Constant_3_output_0",
+    value=helper.make_tensor(
+        name="max_value",
+        data_type=TensorProto.FLOAT,
+        dims=[],
+        vals=[1]
+    )
+)
+
+# STEP 4: Create the Clip node.
+clip_node_3 = helper.make_node(
+    "Clip",
+    inputs=[
+        "/model.23/ReduceSum_1_output_0",     # Data from ReduceSum
+        "/model.23/Constant_2_output_0",        # Min constant (0)
+        "/model.23/Constant_3_output_0"         # Max constant (1)
+    ],
+    outputs=["505"],  # Final output for Section 3
+    name="/model.23/Clip_1"
+)
+
+# Append the new nodes for Section 3 into the graph
+graph.node.extend([sigmoid_node_3, reduce_sum_node_3, min_const_3, max_const_3, clip_node_3])
+
+# STEP 5: Define graph outputs for Section 3.
+output_tensor_intermediate_3 = helper.make_tensor_value_info("onnx::ReduceSum_501", TensorProto.FLOAT, [1, 1, 40, 40])
+output_tensor_final_3 = helper.make_tensor_value_info("505", TensorProto.FLOAT, [1, 1, 40, 40])
+graph.output.extend([output_tensor_intermediate_3, output_tensor_final_3])
+
+# -----------------------------------------------
+# DEBUG: Print the updated list of nodes after adding all sections
+print("\n=== AFTER ADDING SECTION NODES ===")
+print("Node count:", len(graph.node))
+for node in graph.node:
+    print("Node:", node.name)
+
+# Iterate over all nodes and update the Conv node outputs
+for node in graph.node:
+
+    if node.name == "/model.23/cv2.1/cv2.1.2/Conv":
+        # Change its output name to "487" to mimic Rockchip's wiring
+        node.output[0] = "487"
+    elif node.name == "/model.23/cv2.0/cv2.0.2/Conv":
+        node.output[0] = "462"
+    elif node.name == "/model.23/cv2.2/cv2.2.2/Conv":
+        node.output[0] = "512"
+
+
+
+# Declare the new outputs directly with the names provided by the Conv nodes
+tensor_512 = helper.make_tensor_value_info("512", TensorProto.FLOAT, [1, 64, 20, 20])
+tensor_487 = helper.make_tensor_value_info("487", TensorProto.FLOAT, [1, 64, 40, 40])
+tensor_462 = helper.make_tensor_value_info("462", TensorProto.FLOAT, [1, 64, 80, 80])
+
+# Attach these outputs to the graph
+graph.output.extend([tensor_512, tensor_487, tensor_462])
+
+
+print("Final number of nodes:", len(graph.node))
+
+
+# Define the desired output order
+desired_order = [
+    "462",
+    "onnx::ReduceSum_476",
+    "480",
+    "487",
+    "onnx::ReduceSum_501",
+    "505",
+    "512",
+    "onnx::ReduceSum_526",
+    "530"
+]
+
+# Build a dictionary mapping from output name to the actual output tensor info
+existing_outputs = {output.name: output for output in model.graph.output}
+
+# Create a new output list in the desired order
+ordered_outputs = []
+for name in desired_order:
+    if name in existing_outputs:
+        ordered_outputs.append(existing_outputs[name])
+    else:
+        print(f"Warning: Output with name '{name}' not found in the model outputs!")
+
+# Instead of assigning the slice, clear the output field and extend it
+model.graph.ClearField("output")
+model.graph.output.extend(ordered_outputs)
+
+# Define a function to update a ReduceSum node's attributes
+def update_reduce_sum_node(node, new_axes, new_keepdims):
+    # Clear existing attributes
+    del node.attribute[:]
+    # Add new 'axes' attribute and 'keepdims' attribute
+    node.attribute.extend([
+        helper.make_attribute("axes", new_axes),
+        helper.make_attribute("keepdims", new_keepdims)
+    ])
+    print(f"Updated node {node.name} attributes: axes={new_axes}, keepdims={new_keepdims}")
+
+# Iterate over all nodes and update the ReduceSum nodes if needed
+for node in model.graph.node:
+    if node.name in ["onnx::ReduceSum_476", "onnx::ReduceSum_501", "onnx::ReduceSum_526"]:
+        # For each, we want to sum over the channel axis (axis 1) and keep the dimension.
+        update_reduce_sum_node(node, new_axes=[1], new_keepdims=1)
+
+# Force opset to 11
+opset = onnx.OperatorSetIdProto()
+opset.version = 11
+
+# Clear existing opset imports using slicing deletion
+del model.opset_import[:]  # This effectively clears the container
+model.opset_import.append(opset)  # Append the new opset
+
+# Save the modified model if desired
+onnx.save(model, modified_model_path)
+print("Modified model saved to", modified_model_path)
