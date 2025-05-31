@@ -4,7 +4,14 @@ This repository includes both examples for including how one can convert a model
 #as well as a custom process for getting the equivalent onnx format with a semi-manual process
 #I went ahead and made a script to replicate it to have a process for this
 
-
+WSL - Windows Subsystem for Linux
+### Requirements:
+* Rockchip's Yolo11 branch: https://github.com/airockchip/ultralytics_yolo11/tree/v8.3.0
+* Rockchip's RKNN Model Zoo: https://github.com/airockchip/rknn_model_zoo/tree/v2.3.0
+* Rockchip's RKNN Toolkit2: https://github.com/airockchip/rknn-toolkit2/tree/v2.3.0
+      - Appropriate wheel file for your Python version
+      - md5sum.txt
+      - requirements.txt (for appropriate Python version)
 
 After training your yolo single class model or full 80 class model from a pt file:
 * export via yolo in Onnx format
