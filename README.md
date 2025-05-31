@@ -1,6 +1,6 @@
 ### Working RKNN Yolo11N conversion process w quantization - Single Class Model
 #Rockchip has an optimized model in their repository but does not clearly state how they optimized the model
-#This repository includes both examples for including how one can convert a model using the Rockchip process
+This repository includes both examples for including how one can convert a model using the Rockchip process
 #as well as a custom process for getting the equivalent onnx format with a semi-manual process
 #I went ahead and made a script to replicate it to have a process for this
 
