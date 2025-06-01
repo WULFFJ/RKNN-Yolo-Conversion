@@ -38,4 +38,4 @@ After training your yolo single class model or full 80 class model from a pt fil
     - this adds reduce sums and outputs instead of the traditional Yolo single output
 
  *RkNN Conversion
-   - run the .py file and have your yml file in the same folder.
+   - run the run_rknn_conversion.py file and have your yml file in the same folder.
