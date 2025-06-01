@@ -9,13 +9,27 @@ WSL - Windows Subsystem for Linux
 * Rockchip's Yolo11 branch: https://github.com/airockchip/ultralytics_yolo11/tree/v8.3.0
 * Rockchip's RKNN Model Zoo: https://github.com/airockchip/rknn_model_zoo/tree/v2.3.0
 * Rockchip's RKNN Toolkit2: https://github.com/airockchip/rknn-toolkit2/tree/v2.3.0
-      - Appropriate wheel file for your Python version
+      - Appropriate wheel file for your python version
       - md5sum.txt
       - requirements.txt (for appropriate Python version)
 
 After training your yolo single class model or full 80 class model from a pt file:
-* export via yolo in Onnx format
-    - yolo export model='model_path' simplify=False imgsz=640 opset=11 batch=1
+* Rockchip Yolo Export to ONNX
+    - nano ~/newvenv/ultralytics_yolo11/ultralytics/cfg/default.yaml (edit model_path, imgsz ...)
+    - cd ~/newvenv/ultralytics_yolo11
+    - export PYTHONPATH=./
+    - python ./ultralytics/engine/exporter.py (Onnx should be in the folder that the pt model was in)
+ 
+* RKNN Export (RKNN Toolkit2)
+    - python convert.py ~/newvenv/yolo11_rknn/model/yolo11n.onnx rk3566 i8
+
+### Method #2  RKNN Optimization Process (For models converted to ONNX from the regular Ultralytics "Non-Rockchip" version
+    - 
+
+
+
+
+
     - single_cls can be added if necessary
     - if simplify is not put as False, this will not work
     - Opset must be 11 to mimmick their model
