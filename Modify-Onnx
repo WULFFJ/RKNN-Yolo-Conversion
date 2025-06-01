@@ -15,24 +15,24 @@ nodes_to_remove = [
     # Extra nodes without the leading slash
     "/model.23/Concat_1", "/model.23/Concat_2", "/model.23/Reshape",
     "/model.23/Reshape_1", "/model.23/Reshape_2",
-    "model.23/dfl/Constant", "model.23/dfl/Transpose_1", "model.23/dfl/Constant_1", 
-    "model.23/Shape", "model.23/Gather", "model.23/Add", "model.23/Constant_6", 
-    "model.23/Div", "model.23/Constant_7", "model.23/Mul", "model.23/Constant_8", 
-    "model.23/Mul_1", "model.23/Constant_9", "model.23/Constant_10", "model.23/Constant_11", 
-    "model.23/Constant_12", "model.23/Constant_output_0", "model.23/Constant_1_output_0", 
-    "model.23/Constant_4_output_0", "model.23/Constant_5_output_0", "model.23/Constant_2_output_0", 
+    "model.23/dfl/Constant", "model.23/dfl/Transpose_1", "model.23/dfl/Constant_1",
+    "model.23/Shape", "model.23/Gather", "model.23/Add", "model.23/Constant_6",
+    "model.23/Div", "model.23/Constant_7", "model.23/Mul", "model.23/Constant_8",
+    "model.23/Mul_1", "model.23/Constant_9", "model.23/Constant_10", "model.23/Constant_11",
+    "model.23/Constant_12", "model.23/Constant_output_0", "model.23/Constant_1_output_0",
+    "model.23/Constant_4_output_0", "model.23/Constant_5_output_0", "model.23/Constant_2_output_0",
     "model.23/Constant_3_output_0", "/model.23/Constant_5", "/model.23/Constant_6", "/model.23/Constant_7",
-    '/model.23/Constant', '/model.23/Constant_1', '/model.23/Constant_2', '/model.23/dfl/Constant', 
-    '/model.23/dfl/Transpose_1', '/model.23/dfl/Constant_1', '/model.23/Constant_4', '/model.23/Constant_9', 
-    '/model.23/Constant_10', '/model.23/Constant_11', '/model.23/Constant_12', '/model.23/Shape', 
+    '/model.23/Constant', '/model.23/Constant_1', '/model.23/Constant_2', '/model.23/dfl/Constant',
+    '/model.23/dfl/Transpose_1', '/model.23/dfl/Constant_1', '/model.23/Constant_4', '/model.23/Constant_9',
+    '/model.23/Constant_10', '/model.23/Constant_11', '/model.23/Constant_12', '/model.23/Shape',
     '/model.23/Gather', '/model.23/Add', '/model.23/Div', '/model.23/Mul', "/model.23/Constant_3" , "/model.23/Constant_8",
-    '/model.23/Mul_1', '/model.23/Constant_3_output_0', '/model.23/Constant_7_output_0', '/model.23/Constant_8_output_0', 
-    '/model.23/Constant_6_output_0', '/model.23/Constant_5_output_0', '/model.23/Constant_3_output_0' 
+    '/model.23/Mul_1', '/model.23/Constant_3_output_0', '/model.23/Constant_7_output_0', '/model.23/Constant_8_output_0',
+    '/model.23/Constant_6_output_0', '/model.23/Constant_5_output_0', '/model.23/Constant_3_output_0'
 
 ]
 # Paths
-model_path = "best.onnx"
-modified_model_path = "modified.onnx"
+model_path = "bestever.onnx"
+modified_model_path = "best_modified.onnx"
 
 # Load the ONNX model once
 model = onnx.load(model_path)
@@ -62,6 +62,9 @@ for output in graph.output:
         print(f"Removing graph output: {output.name}")
     else:
         new_outputs.append(output)
+
+
+
 
 # Attach the cleaned outputs back (if any exist)
 graph.output.extend(new_outputs)
@@ -294,8 +297,6 @@ for node in graph.node:
         node.output[0] = "462"
     elif node.name == "/model.23/cv2.2/cv2.2.2/Conv":
         node.output[0] = "512"
-
-
 
 # Declare the new outputs directly with the names provided by the Conv nodes
 tensor_512 = helper.make_tensor_value_info("512", TensorProto.FLOAT, [1, 64, 20, 20])
